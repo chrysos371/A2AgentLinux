@@ -9,11 +9,24 @@
       :ai-ready="aiReady"
       :mcp-on="mcpOn"
       @set-key="setApiKey"
+      @quick="handleQuick"
     />
 
     <div class="main-area">
       <StatusBar :mcp-on="mcpOn" :ai-ready="aiReady" :tool-count="toolCount" />
-      <ChatPanel ref="chatPanel" :ws="ws" />
+      <div class="tab-bar">
+        <button
+          v-for="t in tabs"
+          :key="t.key"
+          :class="['tab-btn', { active: activeTab === t.key }]"
+          @click="activeTab = t.key"
+        >
+          <span class="tab-icon" v-html="t.icon"></span>
+          {{ t.label }}
+        </button>
+      </div>
+      <ChatPanel v-if="activeTab === 'chat'" ref="chatPanel" :ws="ws" />
+      <Dashboard v-else :ws="ws" />
     </div>
   </div>
 </template>
@@ -23,12 +36,25 @@ import { ref, onMounted } from 'vue'
 import Sidebar from './components/Sidebar.vue'
 import StatusBar from './components/StatusBar.vue'
 import ChatPanel from './components/ChatPanel.vue'
+import Dashboard from './components/Dashboard.vue'
 
 const apiKey = ref('')
 const toolCount = ref(0)
 const aiReady = ref(false)
 const mcpOn = ref(false)
+const activeTab = ref('chat')
+const chatPanel = ref(null)
 let ws = null
+
+const tabs = [
+  { key: 'chat', label: 'AI 对话', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
+  { key: 'dashboard', label: '系统仪表盘', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>' },
+]
+
+function handleQuick(text) {
+  activeTab.value = 'chat'
+  chatPanel.value?.sendText(text)
+}
 
 function connect() {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -140,5 +166,50 @@ body {
   position: relative;
   z-index: 1;
   min-width: 0;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  padding: 0 20px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: var(--transition);
+  margin-bottom: -1px;
+}
+
+.tab-btn:hover {
+  color: var(--text-secondary);
+  background: rgba(0,212,255,0.03);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-icon {
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+}
+
+.tab-btn.active .tab-icon {
+  opacity: 1;
 }
 </style>
